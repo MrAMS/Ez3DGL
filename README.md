@@ -1,4 +1,4 @@
-![](https://picdl.sunbangyan.cn/2023/10/27/ea969782be03dbb8e04435bbac295083.png)
+![](https://picdl.sunbangyan.cn/2023/10/27/ca57115d66d7836ce70c5f00f9b364ea.png)
 
 # Ez3DGL 
 
