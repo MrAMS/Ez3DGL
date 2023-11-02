@@ -50,6 +50,7 @@ shader_t::shader_t(const char* vertex_shader_path, const char* fragment_shader_p
     catch(std::ifstream::failure e)
     {
         std::cout << "[File ERROR] Fail to open shader file" << ",vertex:" << vertex_shader_path << ",fragment:"  << fragment_shader_path << std::endl;
+        // assert_with_info(0, FMT, ...)
     }
     const char* vShaderCode = vertexCode.c_str();
     const char* fShaderCode = fragmentCode.c_str();
@@ -121,7 +122,7 @@ void shader_t::set_uniform(const char* key, const float x, const float y, const 
 }
 
 void shader_t::blind_texture(const char *texture_key, struct texture_t* texture) {
-    if(!texture->valid) return;
+    assert_with_info(texture->valid, "blind texture %s fail", texture_key);
     use();
     bool hav=false;
     unsigned int unit_id = 0;

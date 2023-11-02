@@ -16,6 +16,12 @@
 namespace Ez3DGL {
     namespace preset {
         /**
+         * @brief 带有三维顶点的立方体顶点数据
+         * @note 请使用 draw_array 进行绘制.
+         * 
+         */
+        extern const float cube_vertices_with_texture[];
+        /**
          * @brief 带有三维顶点,法向量,纹理坐标的立方体顶点数据
          * @note 请使用 draw_array 进行绘制.
          * 

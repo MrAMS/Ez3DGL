@@ -66,10 +66,6 @@ static void framebuffer_size_callback(GLFWwindow* win, int w, int h){
 
 static void processInput(GLFWwindow* window){
     if(ign_keyboard) return;
-    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS){
-        //glfwSetWindowShouldClose(window, true);
-        look_around ^= 1;
-    }
     if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         camera->input_pos(camera_t::UP, win->frame_time_delta);
     if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -78,6 +74,17 @@ static void processInput(GLFWwindow* window){
         camera->input_pos(camera_t::RIGHT, win->frame_time_delta);
     if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
         camera->input_pos(camera_t::LEFT, win->frame_time_delta);
+}
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if(ign_keyboard) return;
+    if(action == GLFW_PRESS){
+        switch (key) {
+        case GLFW_KEY_ESCAPE: look_around = !look_around;
+        break;
+        }
+    }
 }
 
 static void mouse_callback(GLFWwindow* window, double xpos, double ypos){
@@ -95,6 +102,7 @@ int window_setup(){
     glfwSetFramebufferSizeCallback(win->window, framebuffer_size_callback);
     glfwSetCursorPosCallback(win->window, mouse_callback);
     glfwSetScrollCallback(win->window, scroll_callback);
+    glfwSetKeyCallback(win->window, key_callback);
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
