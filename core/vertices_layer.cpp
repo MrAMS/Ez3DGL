@@ -454,3 +454,28 @@ void light_point_t::apply2shader(shader_t* shader,
 
 }
 
+
+void light_spot_t::set_cutoff_angle(float inner_degree, float outer_degree){
+    cutoff = glm::cos(glm::radians(inner_degree));
+    cutoff_outer = glm::cos(glm::radians(outer_degree));
+}
+
+void light_spot_t::apply2shader(shader_t* shader,
+        const char* key_ambient, const char* key_diffuse, const char* key_specular,
+        const char* key_position, const char* key_direction, 
+        const char* key_cutoff, const char* key_cutoff_outer,
+        const char* key_constant, const char* key_linear, const char* key_quadratic)
+{
+    light_base_t::apply2shader(shader, key_ambient, key_diffuse, key_specular);
+
+    shader->set_uniform(key_position, position);
+    shader->set_uniform(key_direction, direction);
+
+    shader->set_uniform(key_cutoff, cutoff);
+    shader->set_uniform(key_cutoff_outer, cutoff_outer);
+
+    shader->set_uniform(key_constant, constant);
+    shader->set_uniform(key_linear, linear);
+    shader->set_uniform(key_quadratic, quadratic);
+
+}

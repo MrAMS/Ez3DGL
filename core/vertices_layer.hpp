@@ -213,9 +213,10 @@ public:
 class light_point_t : public light_base_t{
 public:
     glm::vec3 position;
-    float constant;
-    float linear;
-    float quadratic;
+
+    float constant = 1.f;
+    float linear = 0.0014f;
+    float quadratic = 0.000007f;
 
     void apply2shader(shader_t* shader,
         const char* key_ambient, const char* key_diffuse, const char* key_specular,
@@ -225,14 +226,22 @@ public:
 class light_spot_t : public light_base_t{
 public:
     glm::vec3 direction;
+    glm::vec3 position;
 
-    float constant;
-    float linear;
-    float quadratic;
+    float cutoff = glm::cos(glm::radians(12.5f));
+    float cutoff_outer = glm::cos(glm::radians(17.5f));
+
+    float constant = 1.f;
+    float linear = 0.0014f;
+    float quadratic = 0.000007f;
+
+    void set_cutoff_angle(float inner_degree, float outer_degree);
 
     void apply2shader(shader_t* shader,
         const char* key_ambient, const char* key_diffuse, const char* key_specular,
-        const char* key_direction, const char* key_constant, const char* key_linear, const char* key_quadratic);
+        const char* key_position, const char* key_direction,
+        const char* key_cutoff, const char* key_cutoff_outer,
+        const char* key_constant, const char* key_linear, const char* key_quadratic);
 };
 
 }
