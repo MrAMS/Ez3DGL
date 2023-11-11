@@ -2,7 +2,9 @@
 
 # Ez3DGL 
 
-一个对OpenGL多层抽象封装的框架,可以帮助开发者快速绘制复杂的3D物体场景,而无需接触繁琐的OpenGL本身
+tldr: A Multi-layer Graphics Rendering Engine
+
+一个对OpenGL多层抽象封装的图形学渲染引擎,可以帮助开发者快速绘制复杂的3D物体场景,而无需接触繁琐的OpenGL本身
 
 ## 框架设计
 
@@ -11,12 +13,12 @@
 框架计划共三层抽象,依次自底向上,每一层继承建立于上一层抽象:
 - `vertices` layer  对顶点层次的抽象,操作底层VAO,shader等概念
 - `mesh`     layer  对网格层次的抽象,操作由顶点,纹理等组成的渲染对象(如由Assimp加载的模型网格)
-- `object`   layer  对物体层次的抽象,操作在世界中具有速度,重力的实体
+- `scene`    layer  对场景层次的抽象,维护场景内对象
 
 ```
 | your idea |
 |-----------|   HIGH    LEVEL
-|  object   |   
+|  scene    |   
 |-----------|   ^
 |  mesh     |   |
 |-----------|   |

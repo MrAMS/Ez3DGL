@@ -191,25 +191,67 @@ public:
     bool check_collision(class collision_box_t* other);
 };
 
+/**
+ * @brief 灯光基类
+ * 
+ */
 class light_base_t{
 public:
     glm::vec3 ambient=glm::vec3(0.2f, 0.2f, 0.2f);
     glm::vec3 diffuse=glm::vec3(0.5f, 0.5f, 0.5f);
     glm::vec3 specular=glm::vec3(1.0f, 1.0f, 1.0f);
 
+    /**
+     * @brief 加载灯光到着色器
+     * 
+     * @param shader 着色器对象
+     * @param key_ambient 环境光变量名
+     * @param key_diffuse 漫反射变量名
+     * @param key_specular 高光变量名
+     */
     void apply2shader(shader_t* shader,
         const char* key_ambient, const char* key_diffuse, const char* key_specular);
+
+protected:
+    light_base_t(glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular):
+        ambient(ambient), diffuse(diffuse), specular(specular){}
+    light_base_t(){}
 };
 
+/**
+ * @brief 平行光源
+ * 
+ */
 class light_dir_t : public light_base_t{
 public:
     glm::vec3 direction;
 
+    light_dir_t(glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular,
+        glm::vec3 direction):
+        light_base_t(ambient, diffuse, specular),
+        direction(direction){}
+        
+    light_dir_t(glm::vec3 direction):direction(direction){}
+        
+
+    /**
+     * @brief 加载平行光源到着色器
+     * 
+     * @param shader 着色器对象
+     * @param key_ambient 环境光变量名
+     * @param key_diffuse 漫反射变量名
+     * @param key_specular 高光变量名
+     * @param key_direction 平行光方向变量名
+     */
     void apply2shader(shader_t* shader,
         const char* key_ambient, const char* key_diffuse, const char* key_specular,
         const char* key_direction);
 };
 
+/**
+ * @brief 点光源
+ * 
+ */
 class light_point_t : public light_base_t{
 public:
     glm::vec3 position;
@@ -218,15 +260,29 @@ public:
     float linear = 0.0014f;
     float quadratic = 0.000007f;
 
+    light_point_t(glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular,
+        glm::vec3 position,
+        float constant, float linear, float quadratic):
+        light_base_t(ambient, diffuse, specular),
+        position(position),
+        constant(constant),linear(linear),quadratic(quadratic){}
+
+    light_point_t(glm::vec3 position):position(position){}
+
     void apply2shader(shader_t* shader,
         const char* key_ambient, const char* key_diffuse, const char* key_specular,
         const char* key_position, const char* key_constant, const char* key_linear, const char* key_quadratic);
 };
 
+/**
+ * @brief 聚光灯
+ * 
+ */
 class light_spot_t : public light_base_t{
 public:
-    glm::vec3 direction;
     glm::vec3 position;
+    glm::vec3 direction;
+
 
     float cutoff = glm::cos(glm::radians(12.5f));
     float cutoff_outer = glm::cos(glm::radians(17.5f));
@@ -234,6 +290,19 @@ public:
     float constant = 1.f;
     float linear = 0.0014f;
     float quadratic = 0.000007f;
+
+    light_spot_t(glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular,
+        glm::vec3 position, glm::vec3 direction,
+        float cutoff, float cutoff_outer,
+        float constant, float linear, float quadratic):
+        
+        light_base_t(ambient, diffuse, specular),
+        position(position), direction(direction),
+        cutoff(cutoff), cutoff_outer(cutoff_outer),    
+        constant(constant),linear(linear),quadratic(quadratic){}
+
+    light_spot_t(glm::vec3 position, glm::vec3 direction):
+        position(position), direction(direction){}
 
     void set_cutoff_angle(float inner_degree, float outer_degree);
 
