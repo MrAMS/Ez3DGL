@@ -23,6 +23,7 @@ namespace Ez3DGL {
 
 class texture_t;
 class camera_t;
+class model_t;
 
 /**
  * @brief 着色器对象,支持着色器编译检查,纹理自动绑定管理
@@ -35,9 +36,9 @@ class shader_t{
         shader_t(const char* vertex_shader_path, const char* fragment_shader_path,
                    const char* view_key, const char* proj_key, const char* model_key);
         void use() const;
-        void blind_texture(const char* texture_key, class texture_t* texture);
-        void update_camera(struct camera_t *camera);
-        void update_model(class model_t *model);
+        void bind_texture(const char* texture_key, class texture_t* texture);
+        void update_camera(const camera_t *camera) const;
+        void update_model(const model_t *model) const;
 
         void set_uniform(const char* key, bool val) const;
         void set_uniform(const char* key, int val) const;
@@ -65,7 +66,6 @@ class shader_t{
 
 /**
  * @brief 纹理对象,读取图片生成纹理
- * @note 一般来说,读取PNG图片时,color_format=RGBA,JPG等图片时,color_format=RGB
  *
  */
 class texture_t{
@@ -73,8 +73,7 @@ class texture_t{
         unsigned int texture_id;
         bool valid = false;
 
-        texture_t(const char* file_name, GLenum color_format);
-    private:
+        texture_t(const char* file_name);
         const char* file_name;
         
 };
@@ -163,7 +162,7 @@ public:
     model_t()=default;
     model_t(glm::vec3 pos, glm::vec3 scale=glm::vec3(1.), class model_t* p=nullptr);
 
-    glm::mat4 get_model();
+    glm::mat4 get_model() const;
     glm::mat4 move_to(glm::vec3 pos);
     glm::mat4 move_to(float x, float y, float z);
     glm::mat4 scale_to(float x);
@@ -172,7 +171,7 @@ public:
     glm::mat4 rotate_to(float degree, glm::vec3 axis);
     void set_parent_model(class model_t* p);
 
-    glm::mat4 get_trans_mat(glm::vec3 pos, glm::vec3 scale, float rotate_degree, glm::vec3 rotate_axis);
+    glm::mat4 get_trans_mat(glm::vec3 pos, glm::vec3 scale, float rotate_degree, glm::vec3 rotate_axis) const;
 private:
     class model_t* parent = nullptr;
 };

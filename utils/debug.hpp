@@ -24,3 +24,5 @@
     if(!(COND)) printf(ANSI_FMT("[ASSERT] " FMT, ANSI_FG_RED) "\n", ## __VA_ARGS__); \
     assert(COND)
 
+#define panic_with_info(FMT, ...) \
+    assert_with_info(0, FMT, ## __VA_ARGS__)

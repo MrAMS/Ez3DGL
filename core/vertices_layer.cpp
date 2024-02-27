@@ -49,8 +49,8 @@ shader_t::shader_t(const char* vertex_shader_path, const char* fragment_shader_p
     }
     catch(std::ifstream::failure e)
     {
-        std::cout << "[File ERROR] Fail to open shader file" << ",vertex:" << vertex_shader_path << ",fragment:"  << fragment_shader_path << std::endl;
         // assert_with_info(0, FMT, ...)
+        panic_with_info("Fail to open shader file, vertex_path=%s, fragment_path=%s\n", vertex_shader_path, fragment_shader_path);
     }
     const char* vShaderCode = vertexCode.c_str();
     const char* fShaderCode = fragmentCode.c_str();
@@ -121,7 +121,7 @@ void shader_t::set_uniform(const char* key, const float x, const float y, const 
     glUniform4f(get_uniform_loc(key), x, y, z, w);
 }
 
-void shader_t::blind_texture(const char *texture_key, struct texture_t* texture) {
+void shader_t::bind_texture(const char *texture_key, struct texture_t* texture) {
     assert_with_info(texture->valid, "blind texture %s fail", texture_key);
     use();
     bool hav=false;
@@ -144,12 +144,12 @@ void shader_t::blind_texture(const char *texture_key, struct texture_t* texture)
     set_uniform(texture_key, unit_id);
 }
 
-void shader_t::update_camera(struct camera_t *camera){
+void shader_t::update_camera(const camera_t *camera) const{
     set_uniform(proj_key, camera->projection);
     set_uniform(view_key, camera->view);
 }
 
-void shader_t::update_model(class model_t *model) {
+void shader_t::update_model(const model_t *model) const{
     set_uniform(model_key, model->get_model());
 }
 
@@ -186,7 +186,7 @@ shader_t::~shader_t(){
     //glDeleteProgram(program_id);
 }
 
-texture_t::texture_t(const char* file_name, GLenum color_format):file_name(file_name){
+texture_t::texture_t(const char* file_name):file_name(file_name){
     if(file_name==NULL) return;
     int width, height, nrCh;
     unsigned char* data = stbi_load(file_name, &width, &height, &nrCh, 0);
@@ -199,11 +199,18 @@ texture_t::texture_t(const char* file_name, GLenum color_format):file_name(file_
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     if(data){
+        GLenum color_format;
+        switch (nrCh) {
+            case 1: color_format = GL_RED; break;
+            case 3: color_format = GL_RGB; break;
+            case 4: color_format = GL_RGBA; break;
+            default: panic_with_info("unsupport format(nrCh=%d)", nrCh);
+        }
         glTexImage2D(GL_TEXTURE_2D, 0, color_format, width, height, 0, color_format, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
         printf("[OK] Texture %s %d*%d %dchs readed.\n", file_name, height, width, nrCh);
     }else{
-        printf("[File ERROR] Fail to load texture.\n");
+        panic_with_info("Fail to load texture %s", file_name);
         return;
     }
     stbi_image_free(data);
@@ -361,7 +368,7 @@ void camera_t::input_fov(double scroll){
         fov = max_fov;
 }
 
-glm::mat4 model_t::get_model(){
+glm::mat4 model_t::get_model() const{
     return get_trans_mat(pos, scale, rotate_degree, rotate_axis);
 }
 
@@ -400,7 +407,7 @@ void model_t::set_parent_model(struct model_t *p) {
     parent = p;
 }
 
-glm::mat4 model_t::get_trans_mat(glm::vec3 pos, glm::vec3 scale, float rotate_degree, glm::vec3 rotate_axis){
+glm::mat4 model_t::get_trans_mat(glm::vec3 pos, glm::vec3 scale, float rotate_degree, glm::vec3 rotate_axis) const{
     auto trans = glm::mat4(1.);
     if(parent)
         trans = parent->get_model();
