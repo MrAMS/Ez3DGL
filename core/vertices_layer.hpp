@@ -36,6 +36,7 @@ class shader_t{
         shader_t(const char* vertex_shader_path, const char* fragment_shader_path,
                    const char* view_key, const char* proj_key, const char* model_key);
         void use() const;
+        void clear_texture();
         void bind_texture(const char* texture_key, class texture_t* texture);
         void update_camera(const camera_t *camera) const;
         void update_model(const model_t *model) const;
@@ -59,7 +60,7 @@ class shader_t{
         const char* model_key;
         // utility function for checking shader compilation/linking errors.
         void check_compile_errors(unsigned int shader, const char* type);
-        unsigned int texture_cnt=0;
+        // unsigned int texture_cnt=0;
         std::vector<texture_t*> texture_blinded;
         int get_uniform_loc(const char* key) const;
 };
@@ -74,6 +75,7 @@ class texture_t{
         bool valid = false;
 
         texture_t(const char* file_name);
+        texture_t(unsigned char* image_data, int size);
         const char* file_name;
         
 };

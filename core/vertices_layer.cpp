@@ -23,7 +23,7 @@ static double get_distance(glm::vec3 a, glm::vec3 b){
 shader_t::shader_t(const char* vertex_shader_path, const char* fragment_shader_path,
                        const char* view_key, const char* proj_key, const char* model_key):
                        vertex_shader_path(vertex_shader_path), fragment_shader_path(fragment_shader_path),
-                       view_key(view_key), proj_key(proj_key), model_key(model_key), texture_cnt(0){
+                       view_key(view_key), proj_key(proj_key), model_key(model_key){
     std::string vertexCode;
     std::string fragmentCode;
     std::ifstream vShaderFile;
@@ -121,6 +121,11 @@ void shader_t::set_uniform(const char* key, const float x, const float y, const 
     glUniform4f(get_uniform_loc(key), x, y, z, w);
 }
 
+
+void shader_t::clear_texture(){
+    texture_blinded.clear();
+}
+
 void shader_t::bind_texture(const char *texture_key, struct texture_t* texture) {
     assert_with_info(texture->valid, "blind texture %s fail", texture_key);
     use();
@@ -135,7 +140,7 @@ void shader_t::bind_texture(const char *texture_key, struct texture_t* texture) 
         }
     }
     if(!hav){
-        unit_id = texture_cnt++;
+        unit_id = texture_blinded.size();
         texture_blinded.push_back(texture);
     }
     assert_with_info(unit_id<16, "too much texture to blind");
@@ -190,7 +195,7 @@ texture_t::texture_t(const char* file_name):file_name(file_name){
     if(file_name==NULL) return;
     int width, height, nrCh;
     unsigned char* data = stbi_load(file_name, &width, &height, &nrCh, 0);
-    stbi_set_flip_vertically_on_load(true);
+    // stbi_set_flip_vertically_on_load(true);
     glGenTextures(1, &texture_id);
     glBindTexture(GL_TEXTURE_2D, texture_id);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
@@ -214,6 +219,35 @@ texture_t::texture_t(const char* file_name):file_name(file_name){
         return;
     }
     stbi_image_free(data);
+    valid = true;
+}
+
+texture_t::texture_t(unsigned char* data, int size){
+    int width, height, nrCh;
+    auto image_data = stbi_load_from_memory(data, size, &width, &height, &nrCh, 0);
+    glGenTextures(1, &texture_id);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    if(image_data){
+        GLenum color_format;
+        switch (nrCh) {
+            case 1: color_format = GL_RED; break;
+            case 3: color_format = GL_RGB; break;
+            case 4: color_format = GL_RGBA; break;
+            default: panic_with_info("unsupport format(nrCh=%d)", nrCh);
+        }
+        glTexImage2D(GL_TEXTURE_2D, 0, color_format, width, height, 0, color_format, GL_UNSIGNED_BYTE, image_data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        printf("[OK] Texture from mem %d*%d %dchs readed.\n", height, width, nrCh);
+    }else{
+        panic_with_info("load NULL");
+        return;
+    }
+    stbi_image_free(image_data);
     valid = true;
 }
 

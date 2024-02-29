@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <string>
@@ -48,16 +49,26 @@ public:
     void draw(shader_t* shader, const camera_t* camera, const model_t* model) const{
         assert_with_info(vert!=nullptr, "forget to setup vertices");
         shader->use();
+        shader->clear_texture();
+        int diffuse_cnt = 0, specular_cnt = 0;
         for(const auto& texture: textures)
             switch (texture.type) {
-                case Texture::Type::Diffuse:
-                    shader->bind_texture("material.diffuse", texture.tex);
+                case Texture::Type::Diffuse:{
+                    std::string diffuse_key = "material.diffuse[" + std::to_string(diffuse_cnt) + "]";
+                    shader->bind_texture(diffuse_key.c_str(), texture.tex);
+                    diffuse_cnt+=1;
                     break;
-                case Texture::Type::Specula:
-                    shader->bind_texture("material.specular", texture.tex);
+                }   
+                case Texture::Type::Specula:{
+                    std::string specular_key = "material.specular[" + std::to_string(specular_cnt) + "]";
+                    shader->bind_texture(specular_key.c_str(), texture.tex);
+                    specular_cnt+=1;
                     break;
+                }
                 default: panic_with_info("unsupport texture type");
             }
+        // shader->set_uniform("diffuse_num", diffuse_cnt);
+        // shader->set_uniform("specular_num", spaiTexecular_cnt);
         shader->update_camera(camera);
         shader->update_model(model);
         
@@ -98,7 +109,7 @@ private:
 
         process_node(scene->mRootNode, scene);
     }
-    std::vector<Texture> process_texture(aiMaterial * mat, aiTextureType type){
+    std::vector<Texture> process_texture(aiMaterial * mat, aiTextureType type, const aiScene *scene){
         Texture::Type tex_type;
         switch (type) {
             case aiTextureType_DIFFUSE: tex_type = Texture::Type::Diffuse; break;
@@ -108,19 +119,27 @@ private:
         std::vector<Texture> textures;
         for(unsigned int i = 0; i < mat->GetTextureCount(type); i++)
         {
+            printf("texture %d %d\n", int(tex_type), i);
             aiString filename;
             mat->GetTexture(type, i, &filename);
             std::string filepath = directory + '/' + std::string(filename.C_Str());
 
             bool skip = false;
             for(const auto& texture: loaded_textures)
-                if(filename.C_Str() == texture.tex->file_name && texture.type == tex_type){
+                if(texture.tex->file_name!=nullptr && filename.C_Str() == texture.tex->file_name && texture.type == tex_type){
                     skip = true;
                     textures.push_back(texture);
                 }
 
             if(skip) continue;
-            auto tex = new texture_t(filepath.c_str());
+            auto aitexture = scene->GetEmbeddedTexture(filename.C_Str());
+            texture_t* tex=nullptr;
+            if(aitexture!=nullptr){
+                auto size = aitexture->mHeight == 0 ? aitexture->mWidth : aitexture->mHeight * aitexture->mWidth;
+                tex = new texture_t(reinterpret_cast<unsigned char*>(aitexture->pcData), size);
+            }else{
+                tex = new texture_t(filepath.c_str());
+            }
             textures.emplace_back(Texture{tex_type, tex});
             loaded_textures.emplace_back(Texture{tex_type, tex});
         }
@@ -145,10 +164,12 @@ private:
                 res.indices.push_back(face.mIndices[j]);
         }
         // 处理材质数据
-        auto tex_diff = process_texture(scene->mMaterials[mesh->mMaterialIndex], aiTextureType_DIFFUSE);
-        res.textures.insert(res.textures.end(), tex_diff.begin(), tex_diff.end());
-        auto tex_spe = process_texture(scene->mMaterials[mesh->mMaterialIndex], aiTextureType_SPECULAR);
-        res.textures.insert(res.textures.end(), tex_spe.begin(), tex_spe.end());
+        if(mesh->mMaterialIndex>=0){
+            auto tex_diff = process_texture(scene->mMaterials[mesh->mMaterialIndex], aiTextureType_DIFFUSE, scene);
+            res.textures.insert(res.textures.end(), tex_diff.begin(), tex_diff.end());
+            auto tex_spe = process_texture(scene->mMaterials[mesh->mMaterialIndex], aiTextureType_SPECULAR, scene);
+            res.textures.insert(res.textures.end(), tex_spe.begin(), tex_spe.end());
+        }
         return std::move(res);
     }
     void process_node(aiNode *node, const aiScene *scene){
