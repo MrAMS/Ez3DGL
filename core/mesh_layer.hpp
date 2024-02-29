@@ -31,23 +31,14 @@ struct Texture {
     texture_t* tex=nullptr;
 };
 
-class Mesh{
+class Shader{
 public:
-    std::vector<Vertex> vertex_data;
-    std::vector<unsigned int> indices;
-    std::vector<Texture> textures;
-
-    void setup_vertices(){
-        assert_with_info(vert==nullptr, "vertices is already setup");
-        vert = new vertices_t(vertex_data.size(), {3, 3, 2}, (float*)&vertex_data[0], indices.size(), indices.data());
+    void setup_shader(){
+        assert_with_info(shader==nullptr, "shader is already setup");
+        shader = new shader_t("../shader/fragpos_normal_texcoord_lightpos.vs", "../shader/multiple_lights.fs", "view", "projection", "model");
     }
-    ~Mesh(){
-        if(vert!=nullptr)
-            delete vert;
-    }
-
-    void draw(shader_t* shader, const camera_t* camera, const model_t* model) const{
-        assert_with_info(vert!=nullptr, "forget to setup vertices");
+    void bind(const std::vector<Texture>& textures, const camera_t* camera, const model_t* model){
+        assert_with_info(shader!=nullptr, "forget to setup shader");
         shader->use();
         shader->clear_texture();
         int diffuse_cnt = 0, specular_cnt = 0;
@@ -69,9 +60,36 @@ public:
             }
         // shader->set_uniform("diffuse_num", diffuse_cnt);
         // shader->set_uniform("specular_num", spaiTexecular_cnt);
+        shader->set_uniform("viewPos", camera->position);
         shader->update_camera(camera);
         shader->update_model(model);
-        
+    }
+    ~Shader(){
+        if(shader!=nullptr)
+            delete shader;
+    }
+    shader_t* shader=nullptr;
+private:
+};
+
+class Mesh{
+public:
+    std::vector<Vertex> vertex_data;
+    std::vector<unsigned int> indices;
+    std::vector<Texture> textures;
+
+    void setup_vertices(){
+        assert_with_info(vert==nullptr, "vertices is already setup");
+        vert = new vertices_t(vertex_data.size(), {3, 3, 2}, (float*)&vertex_data[0], indices.size(), indices.data());
+    }
+    ~Mesh(){
+        if(vert!=nullptr)
+            delete vert;
+    }
+
+    void draw(Shader& shader, const camera_t* camera, const model_t* model) const{
+        assert_with_info(vert!=nullptr, "forget to setup vertices");
+        shader.bind(textures, camera, model);
         vert->draw_element(GL_TRIANGLES);
     }
 private:
@@ -86,7 +104,7 @@ public:
             mesh.setup_vertices();
         }
     }
-    void draw(shader_t* shader, const camera_t* camera, const model_t* model){
+    void draw(Shader& shader, const camera_t* camera, const model_t* model){
         for(const auto& mesh: meshes){
             mesh.draw(shader, camera, model);
         }

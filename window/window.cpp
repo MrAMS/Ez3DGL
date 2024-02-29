@@ -177,7 +177,12 @@ __attribute__((weak)) void user_setup(){
 }
 
 __attribute__((weak)) void user_imgui(){
-    implement_tip();
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+
+    ImGui::NewFrame();
+
+    ImGui::ShowDemoWindow();
 }
 
 __attribute__((weak)) void user_loop(){
