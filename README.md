@@ -33,7 +33,6 @@ tldr: A Multi-layer Graphics Rendering Engine
 ├── core                        # 核心封装
 │   ├── mesh_layer.hpp/cpp          # mesh 层面封装
 │   └── vertices_layer.hpp/cpp      # vertices 层面封装
-├── ray_tracker.hpp             # 光线追踪[TODO]
 ├── README.md
 ├── utils                       # 辅助工具
 │   ├── debug.hpp                   # 调试工具
@@ -45,8 +44,8 @@ tldr: A Multi-layer Graphics Rendering Engine
 
 ## 框架进度
 
-- 仍在完善 `vertices layer`, 已实现 `vao`,`shader`,`texture`,`camera`,`light` 等概念的封装,目前正在完善灯光支持
-- 下一步进行 `mesh layer` 的开发,目标实现通过`Assimp`加载模型并显示
-- 完善框架examples
+- 已完成`vertices_layer`, 支持多种类型(点光源, 平行光源, 聚光灯)多个光源
+- 正在完善`mesh layer`, 目前已支持加载显示`obj, fbk`等模型
+- 未来进行 `scene layer` 的开发,目标实现场景内物体的自动管理和简单的物理模型
 
 欢迎 Star&Pr
