@@ -9,8 +9,8 @@
 
 namespace Ez3DGL {
 /**
- * @brief 窗口对象,自动管理GLFWwindow,ImGui,OpenGL和一个摄像机对象,
- 暴露给用户setup(启动时调用),loop(渲染时调用),exit(退出时调用)接口
+ * @brief 窗口对象,自动管理GLFWwindow,ImGui,OpenGL,
+ 暴露给用户setup(启动时调用),loop(渲染时调用),exit(退出时调用)接口, 以及键盘输入,鼠标等接口
  * 
  */
 class glfw_win_t{
@@ -20,6 +20,8 @@ class glfw_win_t{
         // time between current frame and last frame
         float frame_time_delta = 0.0f;
         float frame_time_last = 0.0f;
+        bool imgui_wantCaptureMouse;
+        bool imgui_wantCaptureKeyboard;
 
         GLFWwindow* window;
 
@@ -32,4 +34,9 @@ class glfw_win_t{
 int window_setup();
 int window_loop();
 int window_exit();
-int window_launch(const char* title, glm::vec3 camera_position, int win_width, int win_height);
+int window_launch(const char* title, int win_width, int win_height);
+void window_key_callback(int key, int scancode, int action, int mods);
+void window_mouse_callback(double xpos, double ypos);
+void window_scroll_callback(double xoffset, double yoffset);
+void window_framebuffer_size_callback(int w, int h);
+

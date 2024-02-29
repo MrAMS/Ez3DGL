@@ -3,6 +3,7 @@
 #include <vector>
 #include <filesystem>
 #include <string>
+#include "utils/debug.hpp"
 
 #include "window.hpp"
 
@@ -56,53 +57,38 @@ int glfw_win_t::show(int (*setup)(), int (*loop)(), int (*exit)()){
 static glfw_win_t* win;
 static camera_t* camera;
 
-bool ign_keyboard = false, ign_mouse = false;
-bool look_around = true;
+static bool ign_keyboard = false, ign_mouse = false;
 
 static void framebuffer_size_callback(GLFWwindow* win, int w, int h){
     glViewport(0, 0, w, h);
-    camera->screen_w_div_h = (float)w*1.0f/(float)h;
+    extern void window_framebuffer_size_callback(int w, int h);
+    window_framebuffer_size_callback(w, h);
 }
 
-static void processInput(GLFWwindow* window){
-    if(ign_keyboard) return;
-    if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        camera->input_pos(camera_t::UP, win->frame_time_delta);
-    if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        camera->input_pos(camera_t::DOWN, win->frame_time_delta);
-    if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        camera->input_pos(camera_t::RIGHT, win->frame_time_delta);
-    if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        camera->input_pos(camera_t::LEFT, win->frame_time_delta);
-}
-
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+static void _key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if(ign_keyboard) return;
-    if(action == GLFW_PRESS){
-        switch (key) {
-        case GLFW_KEY_ESCAPE: look_around = !look_around;
-        break;
-        }
-    }
+    extern void window_key_callback(int key, int scancode, int action, int mods);
+    window_key_callback(key, scancode, action, mods);
 }
 
-static void mouse_callback(GLFWwindow* window, double xpos, double ypos){
-    if(ign_mouse || !look_around) return;
-    camera->input_pitch_yaw(xpos, ypos);
-}
-
-static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset){
+static void _mouse_callback(GLFWwindow* window, double xpos, double ypos){
     if(ign_mouse) return;
-    camera->input_fov(yoffset);
+    extern void window_mouse_callback(double xpos, double ypos);
+    window_mouse_callback(xpos, ypos);
 }
 
+static void _scroll_callback(GLFWwindow* window, double xoffset, double yoffset){
+    if(ign_mouse) return;
+    extern void window_scroll_callback(double xoffset, double yoffset);
+    window_scroll_callback(xoffset, yoffset);
+}
 int window_setup(){
     glfwMakeContextCurrent(win->window);
     glfwSetFramebufferSizeCallback(win->window, framebuffer_size_callback);
-    glfwSetCursorPosCallback(win->window, mouse_callback);
-    glfwSetScrollCallback(win->window, scroll_callback);
-    glfwSetKeyCallback(win->window, key_callback);
+    glfwSetCursorPosCallback(win->window, _mouse_callback);
+    glfwSetScrollCallback(win->window, _scroll_callback);
+    glfwSetKeyCallback(win->window, _key_callback);
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -146,19 +132,13 @@ int window_loop(){
         ign_keyboard = true;
     else
         ign_keyboard = false;
-
-    processInput(win->window);
-    
     
     // render
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // also clear the depth buffer now!
 
-    camera->calc_view();
-    camera->calc_projection();
-
-    extern void user_loop(camera_t* camera);
-    user_loop(camera);
+    extern void user_loop();
+    user_loop();
 
 //    printf("camera pos: %f %f %f\n", camera->position.x, camera->position.y, camera->position.z);
 //    printf("camera fov: %f\n", camera->fov);
@@ -172,8 +152,6 @@ int window_loop(){
 
 
 int window_exit(){
-    // delete win;
-    delete camera;
 
     extern void user_exit();
     user_exit();
@@ -185,24 +163,40 @@ int window_exit(){
     return 0;
 }
 
-int window_launch(const char* title, glm::vec3 camera_position, int win_width, int win_height){
+int window_launch(const char* title, int win_width, int win_height){
     win = new glfw_win_t(win_width, win_height, title);
-    camera = new camera_t(win_width*1.0f/win_height, camera_position);
     return win->show(window_setup, window_loop, window_exit);
 }
 
+static void implement_tip(){
+    // log_with_info("Maybe implement the function yourself");
+}
+
 __attribute__((weak)) void user_setup(){
-    // Please implement the function yourself
+    implement_tip();
 }
 
 __attribute__((weak)) void user_imgui(){
-    // Please implement the function yourself
+    implement_tip();
 }
 
-__attribute__((weak)) void user_loop(camera_t* camera){
-    // Please implement the function yourself
+__attribute__((weak)) void user_loop(){
+    implement_tip();
 }
 
 __attribute__((weak)) void user_exit(){
-    // Please implement the function yourself
+    implement_tip();
+}
+__attribute__((weak)) void window_key_callback(int key, int scancode, int action, int mods){
+    implement_tip();
+}
+__attribute__((weak)) void window_mouse_callback(double xpos, double ypos){
+    implement_tip();
+}
+__attribute__((weak)) void window_scroll_callback(double xoffset, double yoffset){
+    implement_tip();
+}
+
+__attribute__((weak)) void window_framebuffer_size_callback(int w, int h){
+    implement_tip();
 }
