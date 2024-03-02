@@ -33,10 +33,13 @@ struct Texture {
 
 class Shader{
 public:
+    float tmp_material_shininess=32;
+
     void setup_shader(){
         assert_with_info(shader==nullptr, "shader is already setup");
         shader = new shader_t("../shader/fragpos_normal_texcoord_lightpos.vs", "../shader/multiple_lights.fs", "view", "projection", "model");
     }
+    // TODO update_lights
     void bind(const std::vector<Texture>& textures, const camera_t* camera, const model_t* model){
         assert_with_info(shader!=nullptr, "forget to setup shader");
         shader->use();
@@ -60,6 +63,7 @@ public:
             }
         // shader->set_uniform("diffuse_num", diffuse_cnt);
         // shader->set_uniform("specular_num", spaiTexecular_cnt);
+        shader->set_uniform("material.shininess", tmp_material_shininess);
         shader->set_uniform("viewPos", camera->position);
         shader->update_camera(camera);
         shader->update_model(model);
@@ -68,8 +72,11 @@ public:
         if(shader!=nullptr)
             delete shader;
     }
-    shader_t* shader=nullptr;
+    friend class LightDir;
+    friend class LightPoint;
+    friend class LightSpot;
 private:
+    shader_t* shader=nullptr;
 };
 
 class Mesh{
@@ -87,9 +94,9 @@ public:
             delete vert;
     }
 
-    void draw(Shader& shader, const camera_t* camera, const model_t* model) const{
+    void draw(Shader* shader, const camera_t* camera, const model_t* model) const{
         assert_with_info(vert!=nullptr, "forget to setup vertices");
-        shader.bind(textures, camera, model);
+        shader->bind(textures, camera, model);
         vert->draw_element(GL_TRIANGLES);
     }
 private:
@@ -98,13 +105,20 @@ private:
 
 class Model{
 public:
+    Model()=default;
     Model(std::string path){
+        setup_model(path);
+    }
+    void setup_model(std::string path){
+        assert_with_info(model_path.empty(), "model is already setup");
+        model_path = path;
         load_model(path);
         for(auto& mesh: meshes){
             mesh.setup_vertices();
         }
     }
-    void draw(Shader& shader, const camera_t* camera, const model_t* model){
+    void draw(Shader* shader, const camera_t* camera, const model_t* model){
+        assert_with_info(!model_path.empty(), "forget to setup model");
         for(const auto& mesh: meshes){
             mesh.draw(shader, camera, model);
         }
@@ -116,6 +130,7 @@ public:
 private:
     std::vector<Mesh> meshes;
     std::vector<Texture> loaded_textures;
+    std::string model_path;
     std::string directory;
     void load_model(std::string path){
         Assimp::Importer import;
@@ -205,19 +220,125 @@ private:
     }
 };
 
+class LightBase{
+public:
+    glm::vec3 ambient=glm::vec3(0.2f, 0.2f, 0.2f);
+    glm::vec3 diffuse=glm::vec3(0.5f, 0.5f, 0.5f);
+    glm::vec3 specular=glm::vec3(1.0f, 1.0f, 1.0f);
+
+    LightBase(glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular):ambient(ambient), diffuse(diffuse), specular(specular) {
+
+    }
+
+    virtual void apply_shader(Shader* shader) const = 0;
+};
+
+class LightDir : public LightBase {
+public:
+    glm::vec3 direction;
+    LightDir(glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, glm::vec3 direction):
+        LightBase(ambient, diffuse, specular), direction(direction) {
+
+    }
+    void apply_shader(Shader* shader) const override{
+        shader->shader->use();
+
+        shader->shader->set_uniform("light_dir.ambient", ambient);
+        shader->shader->set_uniform("light_dir.diffuse", diffuse);
+        shader->shader->set_uniform("light_dir.specular", specular);
+
+        shader->shader->set_uniform("light_dir.direction", direction);
+    }
+};
+
+class LightPoint : public LightBase{
+public:
+    glm::vec3 position;
+
+    float constant = 1.f;
+    float linear = 0.0014f;
+    float quadratic = 0.000007f;
+
+    LightPoint(glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular,
+        glm::vec3 position,
+        float constant, float linear, float quadratic):
+            LightBase(ambient, diffuse, specular), position(position), constant(constant), linear(linear), quadratic(quadratic) {
+    }
+    void apply_shader(Shader* shader) const override{
+        shader->shader->use();
+
+        shader->shader->set_uniform("light_point.ambient", ambient);
+        shader->shader->set_uniform("light_point.diffuse", diffuse);
+        shader->shader->set_uniform("light_point.specular", specular);
+
+        shader->shader->set_uniform("light_point.position", position);
+
+        shader->shader->set_uniform("light_point.constant", constant);
+        shader->shader->set_uniform("light_point.linear", linear);
+        shader->shader->set_uniform("light_point.quadratic", quadratic);
+    }
+};
+
+class LightSpot : public LightPoint{
+public:
+    glm::vec3 direction;
+    float inner_degree;
+    float outer_degree;
+
+    LightSpot(glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular,
+        glm::vec3 position, glm::vec3 direction,
+        float constant, float linear, float quadratic,
+        float inner_degree, float outer_degree):
+            LightPoint(ambient, diffuse, specular, position, constant, linear, quadratic),
+            direction(direction),
+            inner_degree(inner_degree), outer_degree(outer_degree) {
+                assert_with_info(inner_degree<outer_degree, "inner degree must be less than outer degree");
+            }
+    void apply_shader(Shader* shader) const override{
+        shader->shader->use();
+
+        auto cutoff = glm::cos(glm::radians(inner_degree));
+        auto cutoff_outer = glm::cos(glm::radians(outer_degree));
+        shader->shader->set_uniform("light_spot.ambient", ambient);
+        shader->shader->set_uniform("light_spot.diffuse", diffuse);
+        shader->shader->set_uniform("light_spot.specular", specular);
+
+        shader->shader->set_uniform("light_spot.position", position);
+        shader->shader->set_uniform("light_spot.direction", direction);
+
+        shader->shader->set_uniform("light_spot.constant", constant);
+        shader->shader->set_uniform("light_spot.linear", linear);
+        shader->shader->set_uniform("light_spot.quadratic", quadratic);
+
+        shader->shader->set_uniform("light_spot.cutoff", cutoff);
+        shader->shader->set_uniform("light_spot.cutoff_outer", cutoff_outer);
+    }
+private:
+
+};
+
+
 /**
  * @brief 光源对象,支持定向光源,点光源,聚光
  * 
  */
-class Light{
+class Lights{
 public:
-
-    light_dir_t dir_light;
+    std::vector<LightDir> dir_light;
     // note that the size has limited
-    std::vector<light_point_t> point_lights;
-    light_spot_t spot_light;
-
-
+    std::vector<LightPoint> point_lights;
+    std::vector<LightSpot> spot_light;
+    void apply_shader(Shader* shader) const{
+        for(const auto& dir : dir_light){
+            dir.apply_shader(shader);
+        }
+        for(const auto& point : point_lights){
+            point.apply_shader(shader);
+        }
+        for(const auto& spot : spot_light){
+            spot.apply_shader(shader);
+        }
+    }
 };
 
 }

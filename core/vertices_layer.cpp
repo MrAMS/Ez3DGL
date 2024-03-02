@@ -12,6 +12,7 @@
 #include "stb_image.h"
 #include <cmath>
 #include "utils/debug.hpp"
+#include <glm/gtx/quaternion.hpp>
 
 using namespace Ez3DGL;
 
@@ -403,7 +404,13 @@ void camera_t::input_fov(double scroll){
 }
 
 glm::mat4 model_t::get_model() const{
-    return get_trans_mat(pos, scale, rotate_degree, rotate_axis);
+    auto parent_trans = glm::mat4(1.);
+    if(parent)
+        parent_trans = parent->get_model();
+    const auto transl_trans = glm::translate(glm::mat4(1.), pos);
+    const auto rotate_trans = glm::toMat4(quaternion);
+    const auto scala_trans = glm::scale(glm::mat4(1.), scale);
+    return parent_trans * transl_trans * rotate_trans * scala_trans;
 }
 
 glm::mat4 model_t::move_to(glm::vec3 x){
@@ -431,27 +438,32 @@ glm::mat4 model_t::scale_to(glm::vec3 x){
     return get_model();
 }
 
-glm::mat4 model_t::rotate_to(float x, glm::vec3 axis){
-    rotate_degree = x;
-    rotate_axis = axis;
+glm::mat4 model_t::rotate_to(float degree, glm::vec3 axis){
+    quaternion =glm::angleAxis(glm::radians(degree), axis);
     return get_model();
+}
+
+glm::mat4 model_t::rotate_to(glm::vec3 pitch_yaw_roll_degree){
+    quaternion = glm::quat(pitch_yaw_roll_degree);
+    return get_model();
+}
+
+glm::mat4 model_t::rotate(glm::vec3 pitch_yaw_roll_degree){
+    const auto q = glm::quat(glm::radians(pitch_yaw_roll_degree));
+    quaternion *= q;
+    return get_model();
+}
+
+glm::vec3 model_t::look_at_dir() const{
+    return glm::normalize(quaternion * dir);
 }
 
 void model_t::set_parent_model(struct model_t *p) {
     parent = p;
 }
 
-glm::mat4 model_t::get_trans_mat(glm::vec3 pos, glm::vec3 scale, float rotate_degree, glm::vec3 rotate_axis) const{
-    auto trans = glm::mat4(1.);
-    if(parent)
-        trans = parent->get_model();
-    trans = glm::translate(trans, pos);
-    trans = glm::rotate(trans, glm::radians(rotate_degree), rotate_axis);
-    trans = glm::scale(trans, scale);
-    return trans;
-}
 
-model_t::model_t(glm::vec3 pos, glm::vec3 scale, class model_t *p):pos(pos), scale(scale), parent(p)  {
+model_t::model_t(glm::vec3 pos, glm::vec3 scale, glm::vec3 init_dir, class model_t *p):pos(pos), scale(scale), dir(init_dir), parent(p)  {
 
 }
 

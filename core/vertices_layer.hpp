@@ -18,6 +18,7 @@
 #include <initializer_list>
 #include <memory>
 #include <vector>
+#include <glm/gtc/quaternion.hpp>
 
 namespace Ez3DGL {
 
@@ -158,11 +159,11 @@ class model_t{
 public:
     glm::vec3 pos;
     glm::vec3 scale=glm::vec3(1.);
-    glm::vec3 rotate_axis=glm::vec3(0, 0, 1);
-    float rotate_degree=0;
+    glm::vec3 dir;
+    glm::quat quaternion;
 
     model_t()=default;
-    model_t(glm::vec3 pos, glm::vec3 scale=glm::vec3(1.), class model_t* p=nullptr);
+    model_t(glm::vec3 pos, glm::vec3 scale=glm::vec3(1.), glm::vec3 init_dir=glm::vec3(0, 0, 1), class model_t* p=nullptr);
 
     glm::mat4 get_model() const;
     glm::mat4 move_to(glm::vec3 pos);
@@ -171,9 +172,10 @@ public:
     glm::mat4 scale_to(glm::vec3 x);
     glm::mat4 scale_to(float x, float y, float z);
     glm::mat4 rotate_to(float degree, glm::vec3 axis);
+    glm::mat4 rotate_to(glm::vec3 pitch_yaw_roll_degree);
+    glm::mat4 rotate(glm::vec3 pitch_yaw_roll_degree);
+    glm::vec3 look_at_dir() const;
     void set_parent_model(class model_t* p);
-
-    glm::mat4 get_trans_mat(glm::vec3 pos, glm::vec3 scale, float rotate_degree, glm::vec3 rotate_axis) const;
 private:
     class model_t* parent = nullptr;
 };

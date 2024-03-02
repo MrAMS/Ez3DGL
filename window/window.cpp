@@ -3,6 +3,7 @@
 #include <vector>
 #include <filesystem>
 #include <string>
+#include <chrono>
 #include "utils/debug.hpp"
 
 #include "window.hpp"
@@ -137,8 +138,12 @@ int window_loop(){
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // also clear the depth buffer now!
 
-    extern void user_loop();
-    user_loop();
+    static std::chrono::system_clock::time_point timer_pre = std::chrono::system_clock::now();
+    auto timer_now = std::chrono::system_clock::now();
+    auto timer_delta = std::chrono::duration_cast<std::chrono::milliseconds>(timer_now - timer_pre);
+    timer_pre = timer_now;
+    extern void user_loop(long int frame_delta_ms);
+    user_loop(timer_delta.count());
 
 //    printf("camera pos: %f %f %f\n", camera->position.x, camera->position.y, camera->position.z);
 //    printf("camera fov: %f\n", camera->fov);
@@ -185,7 +190,7 @@ __attribute__((weak)) void user_imgui(){
     ImGui::ShowDemoWindow();
 }
 
-__attribute__((weak)) void user_loop(){
+__attribute__((weak)) void user_loop(long int frame_delta_ms){
     implement_tip();
 }
 

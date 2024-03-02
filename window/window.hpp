@@ -31,9 +31,6 @@ class glfw_win_t{
 };
 }
 
-int window_setup();
-int window_loop();
-int window_exit();
 int window_launch(const char* title, int win_width, int win_height);
 void window_key_callback(int key, int scancode, int action, int mods);
 void window_mouse_callback(double xpos, double ypos);
