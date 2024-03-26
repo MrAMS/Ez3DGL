@@ -94,6 +94,9 @@ void shader_t::set_uniform(const char* key, int val) const{
     glUniform1i(get_uniform_loc(key), val);
 }
 
+void shader_t::set_uniform(const char* key, size_t val) const{
+    glUniform1i(get_uniform_loc(key), val);
+}
 void shader_t::set_uniform(const char* key, unsigned int val) const{
     glUniform1i(get_uniform_loc(key), val);
 }
@@ -457,6 +460,11 @@ glm::mat4 model_t::rotate(glm::vec3 pitch_yaw_roll_degree){
 glm::vec3 model_t::look_at_dir() const{
     return glm::normalize(quaternion * dir);
 }
+
+glm::vec3 model_t::rotate_euler_angles() const{
+    return glm::eulerAngles(quaternion);
+}
+
 
 void model_t::set_parent_model(struct model_t *p) {
     parent = p;

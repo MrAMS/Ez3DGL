@@ -16,7 +16,7 @@ tldr: A Multi-layer Graphics Rendering Engine
 - `entity`   layer  对实体层次的抽象,提供简单的物理引擎和场景管理等功能
 
 ```
-| your idea |
+  YOUR IDEA 
 |-----------|   HIGH    LEVEL
 |  entity   |   
 |-----------|   ^
@@ -24,7 +24,7 @@ tldr: A Multi-layer Graphics Rendering Engine
 |-----------|   |
 |  vertices |   
 |-----------|   LOW     LEVEL
-|  OpenGL   |
+   OpenGL   
 ```
 
 ## 框架特性

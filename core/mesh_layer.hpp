@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdlib>
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <string>
@@ -31,6 +32,77 @@ struct Texture {
     texture_t* tex=nullptr;
 };
 
+
+class LightBase{
+public:
+    glm::vec3 ambient=glm::vec3(0.2f, 0.2f, 0.2f);
+    glm::vec3 diffuse=glm::vec3(0.5f, 0.5f, 0.5f);
+    glm::vec3 specular=glm::vec3(1.0f, 1.0f, 1.0f);
+
+    LightBase(glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular):ambient(ambient), diffuse(diffuse), specular(specular) {
+
+    }
+    LightBase(){
+
+    }
+};
+
+class LightDir : public LightBase {
+public:
+    glm::vec3 direction;
+    LightDir(glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, glm::vec3 direction):
+        LightBase(ambient, diffuse, specular), direction(direction) {
+    }
+    LightDir(glm::vec3 direction):direction(direction) {
+
+    }
+};
+
+class LightPoint : public LightBase{
+public:
+    glm::vec3 position;
+
+    float constant = 1.f;
+    float linear = 0.001f;
+    float quadratic = 0.049f;
+
+    LightPoint(
+        glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular,
+        glm::vec3 position,
+        float constant, float linear, float quadratic):
+            LightBase(ambient, diffuse, specular),
+            position(position), constant(constant), linear(linear), quadratic(quadratic) {}
+    LightPoint(
+        glm::vec3 position,
+        glm::vec3 color):
+            LightBase(color, color, color),
+            position(position) {}
+};
+
+class LightSpot : public LightPoint{
+public:
+    glm::vec3 direction;
+    float inner_degree;
+    float outer_degree;
+
+    LightSpot(glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular,
+        glm::vec3 position, glm::vec3 direction,
+        float constant, float linear, float quadratic,
+        float inner_degree, float outer_degree):
+            LightPoint(ambient, diffuse, specular, position, constant, linear, quadratic),
+            direction(direction),
+            inner_degree(inner_degree), outer_degree(outer_degree) {
+                assert_with_info(inner_degree<outer_degree, "inner degree must be less than outer degree");
+            }
+    LightSpot(glm::vec3 position, glm::vec3 direction,
+        glm::vec3 color,
+        float inner_degree, float outer_degree):
+            LightPoint(position, color),
+            inner_degree(inner_degree), outer_degree(outer_degree){
+
+            }
+};
+
 class Shader{
 public:
     float tmp_material_shininess=32;
@@ -39,7 +111,46 @@ public:
         assert_with_info(shader==nullptr, "shader is already setup");
         shader = new shader_t("../shader/fragpos_normal_texcoord_lightpos.vs", "../shader/multiple_lights.fs", "view", "projection", "model");
     }
-    // TODO update_lights
+    void set_lights(const std::vector<LightDir>& dir_lights, const std::vector<LightPoint>& point_lights, const std::vector<LightSpot>& spot_lights){
+        shader->use();
+        shader->set_uniform("dir_light_num", dir_lights.size());
+        shader->set_uniform("point_light_num", point_lights.size());
+        shader->set_uniform("spot_light_num", spot_lights.size());
+        for(int i=0; i<dir_lights.size(); i++){
+            std::string key = "lights_dir[" + std::to_string(i) + "]";
+            shader->set_uniform(std::string(key+".ambient").c_str(),    dir_lights[i].ambient);
+            shader->set_uniform(std::string(key+".diffuse").c_str(),    dir_lights[i].diffuse);
+            shader->set_uniform(std::string(key+".specular").c_str(),   dir_lights[i].specular);
+            shader->set_uniform(std::string(key+".direction").c_str(),  dir_lights[i].direction);
+        }
+        for(int i=0; i<point_lights.size(); i++){
+            std::string key = "lights_point[" + std::to_string(i) + "]";
+            shader->set_uniform(std::string(key+".ambient").c_str(),    point_lights[i].ambient);
+            shader->set_uniform(std::string(key+".diffuse").c_str(),    point_lights[i].diffuse);
+            shader->set_uniform(std::string(key+".specular").c_str(),   point_lights[i].specular);
+            shader->set_uniform(std::string(key+".position").c_str(),   point_lights[i].position);
+
+            shader->set_uniform(std::string(key+".constant").c_str(),   point_lights[i].constant);
+            shader->set_uniform(std::string(key+".linear").c_str(),     point_lights[i].linear);
+            shader->set_uniform(std::string(key+".quadratic").c_str(),  point_lights[i].quadratic);
+        }
+        for(int i=0; i<spot_lights.size(); i++){
+            std::string key = "lights_spot[" + std::to_string(i) + "]";
+            shader->set_uniform(std::string(key+".ambient").c_str(),    spot_lights[i].ambient);
+            shader->set_uniform(std::string(key+".diffuse").c_str(),    spot_lights[i].diffuse);
+            shader->set_uniform(std::string(key+".specular").c_str(),   spot_lights[i].specular);
+            shader->set_uniform(std::string(key+".direction").c_str(),  spot_lights[i].direction);
+            shader->set_uniform(std::string(key+".position").c_str(),   spot_lights[i].position);
+
+            shader->set_uniform(std::string(key+".constant").c_str(),   spot_lights[i].constant);
+            shader->set_uniform(std::string(key+".linear").c_str(),     spot_lights[i].linear);
+            shader->set_uniform(std::string(key+".quadratic").c_str(),  spot_lights[i].quadratic);
+
+            shader->set_uniform(std::string(key+".cutoff").c_str(),     glm::cos(glm::radians(spot_lights[i].inner_degree)));
+            shader->set_uniform(std::string(key+".cutoff_outer").c_str(),glm::cos(glm::radians(spot_lights[i].outer_degree)));
+        }
+
+    }
     void bind(const std::vector<Texture>& textures, const camera_t* camera, const model_t* model){
         assert_with_info(shader!=nullptr, "forget to setup shader");
         shader->use();
@@ -72,9 +183,7 @@ public:
         if(shader!=nullptr)
             delete shader;
     }
-    friend class LightDir;
-    friend class LightPoint;
-    friend class LightSpot;
+    friend class Lights;
 private:
     shader_t* shader=nullptr;
 };
@@ -216,127 +325,6 @@ private:
         for(unsigned int i = 0; i < node->mNumChildren; i++)
         {
             process_node(node->mChildren[i], scene);
-        }
-    }
-};
-
-class LightBase{
-public:
-    glm::vec3 ambient=glm::vec3(0.2f, 0.2f, 0.2f);
-    glm::vec3 diffuse=glm::vec3(0.5f, 0.5f, 0.5f);
-    glm::vec3 specular=glm::vec3(1.0f, 1.0f, 1.0f);
-
-    LightBase(glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular):ambient(ambient), diffuse(diffuse), specular(specular) {
-
-    }
-
-    virtual void apply_shader(Shader* shader) const = 0;
-};
-
-class LightDir : public LightBase {
-public:
-    glm::vec3 direction;
-    LightDir(glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, glm::vec3 direction):
-        LightBase(ambient, diffuse, specular), direction(direction) {
-
-    }
-    void apply_shader(Shader* shader) const override{
-        shader->shader->use();
-
-        shader->shader->set_uniform("light_dir.ambient", ambient);
-        shader->shader->set_uniform("light_dir.diffuse", diffuse);
-        shader->shader->set_uniform("light_dir.specular", specular);
-
-        shader->shader->set_uniform("light_dir.direction", direction);
-    }
-};
-
-class LightPoint : public LightBase{
-public:
-    glm::vec3 position;
-
-    float constant = 1.f;
-    float linear = 0.0014f;
-    float quadratic = 0.000007f;
-
-    LightPoint(glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular,
-        glm::vec3 position,
-        float constant, float linear, float quadratic):
-            LightBase(ambient, diffuse, specular), position(position), constant(constant), linear(linear), quadratic(quadratic) {
-    }
-    void apply_shader(Shader* shader) const override{
-        shader->shader->use();
-
-        shader->shader->set_uniform("light_point.ambient", ambient);
-        shader->shader->set_uniform("light_point.diffuse", diffuse);
-        shader->shader->set_uniform("light_point.specular", specular);
-
-        shader->shader->set_uniform("light_point.position", position);
-
-        shader->shader->set_uniform("light_point.constant", constant);
-        shader->shader->set_uniform("light_point.linear", linear);
-        shader->shader->set_uniform("light_point.quadratic", quadratic);
-    }
-};
-
-class LightSpot : public LightPoint{
-public:
-    glm::vec3 direction;
-    float inner_degree;
-    float outer_degree;
-
-    LightSpot(glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular,
-        glm::vec3 position, glm::vec3 direction,
-        float constant, float linear, float quadratic,
-        float inner_degree, float outer_degree):
-            LightPoint(ambient, diffuse, specular, position, constant, linear, quadratic),
-            direction(direction),
-            inner_degree(inner_degree), outer_degree(outer_degree) {
-                assert_with_info(inner_degree<outer_degree, "inner degree must be less than outer degree");
-            }
-    void apply_shader(Shader* shader) const override{
-        shader->shader->use();
-
-        auto cutoff = glm::cos(glm::radians(inner_degree));
-        auto cutoff_outer = glm::cos(glm::radians(outer_degree));
-        shader->shader->set_uniform("light_spot.ambient", ambient);
-        shader->shader->set_uniform("light_spot.diffuse", diffuse);
-        shader->shader->set_uniform("light_spot.specular", specular);
-
-        shader->shader->set_uniform("light_spot.position", position);
-        shader->shader->set_uniform("light_spot.direction", direction);
-
-        shader->shader->set_uniform("light_spot.constant", constant);
-        shader->shader->set_uniform("light_spot.linear", linear);
-        shader->shader->set_uniform("light_spot.quadratic", quadratic);
-
-        shader->shader->set_uniform("light_spot.cutoff", cutoff);
-        shader->shader->set_uniform("light_spot.cutoff_outer", cutoff_outer);
-    }
-private:
-
-};
-
-
-/**
- * @brief 光源对象,支持定向光源,点光源,聚光
- * 
- */
-class Lights{
-public:
-    std::vector<LightDir> dir_light;
-    // note that the size has limited
-    std::vector<LightPoint> point_lights;
-    std::vector<LightSpot> spot_light;
-    void apply_shader(Shader* shader) const{
-        for(const auto& dir : dir_light){
-            dir.apply_shader(shader);
-        }
-        for(const auto& point : point_lights){
-            point.apply_shader(shader);
-        }
-        for(const auto& spot : spot_light){
-            spot.apply_shader(shader);
         }
     }
 };

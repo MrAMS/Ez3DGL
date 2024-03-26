@@ -44,6 +44,7 @@ class shader_t{
 
         void set_uniform(const char* key, bool val) const;
         void set_uniform(const char* key, int val) const;
+        void set_uniform(const char* key, size_t val) const;
         void set_uniform(const char* key, unsigned int val) const;
         void set_uniform(const char* key, float val) const;
         void set_uniform(const char* key, const glm::mat4 &mat) const;
@@ -175,6 +176,7 @@ public:
     glm::mat4 rotate_to(glm::vec3 pitch_yaw_roll_degree);
     glm::mat4 rotate(glm::vec3 pitch_yaw_roll_degree);
     glm::vec3 look_at_dir() const;
+    glm::vec3 rotate_euler_angles() const;
     void set_parent_model(class model_t* p);
 private:
     class model_t* parent = nullptr;
