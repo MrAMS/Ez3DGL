@@ -109,7 +109,7 @@ public:
 
     void setup_shader(){
         assert_with_info(shader==nullptr, "shader is already setup");
-        shader = new shader_t("../shader/fragpos_normal_texcoord_lightpos.vs", "../shader/multiple_lights.fs", "view", "projection", "model");
+        shader = new shader_t("../shader/fragpos_normal_texcoord.vs", "../shader/multiple_lights.fs", "view", "projection", "model");
     }
     void set_lights(const std::vector<LightDir>& dir_lights, const std::vector<LightPoint>& point_lights, const std::vector<LightSpot>& spot_lights){
         shader->use();
@@ -196,7 +196,7 @@ public:
 
     void setup_vertices(){
         assert_with_info(vert==nullptr, "vertices is already setup");
-        vert = new vertices_t(vertex_data.size(), {3, 3, 2}, (float*)&vertex_data[0], indices.size(), indices.data());
+        vert = new vertices_t(vertex_data.size()*(3+3+2), {3, 3, 2}, (float*)&vertex_data[0], indices.size(), indices.data());
     }
     ~Mesh(){
         if(vert!=nullptr)

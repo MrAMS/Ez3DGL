@@ -10,8 +10,11 @@
  */
 #pragma once
 
+#include <cmath>
 #include <vector>
 #include <glm/glm.hpp>
+#include <glm/gtx/normal.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace Ez3DGL {
     namespace preset {
@@ -33,31 +36,99 @@ namespace Ez3DGL {
         * @note 注意输入的二维轮廓坐标应在范围[-0.5, 0.5],否则纹理坐标可能会出现问题. 请使用 draw_array 进行绘制.
         * 
         */
-        class revolu_surf_vgenerator{
+        class vgen_revolu_surf{
         public:
-            std::vector<glm::vec2> outlines;
-            glm::vec3 rotate_axis;
 
             /**
-             * @brief Construct a new revolu surf vgenerator object
-             * 
-             * @param rotate_axis 旋转轴
-             * @param outlines 二维轮廓点集,范围[-0.5, 0.5]
-             */
-            revolu_surf_vgenerator(std::vector<glm::vec2> outlines, glm::vec3 rotate_axis=glm::vec3(0.0, 0.0, 1.0)):outlines(outlines), rotate_axis(rotate_axis){}
-            
-            /**
             * @brief 生成顶点数组
-            * 
-            * @param num 微分次数
+            
+            * @param plane_num 面数
+            * @param rotate_axis 旋转轴
+            * @param outlines x-y平面上, 二维轮廓点集,范围[-0.5, 0.5]
             * @return std::vector<float> 顶点数组
             */
-            std::vector<float> generate(int num);
+            static std::vector<float> generate(int plane_num, const std::vector<glm::vec2>& outlines, const glm::vec3& rotate_axis=glm::vec3(0.0, 0.0, 1.0)){
+                std::vector<float> vertices;
+                float delta_degree = 360.f/plane_num;
+                for(int i=0;i<outlines.size()-1;++i){
+                    for(int slice_i=0;slice_i<plane_num;++slice_i){
+                        float degree = slice_i*delta_degree;
+                        auto p1_2d = outlines[i];
+                        auto p3_2d = outlines[i+1];
+                        push_surface(&vertices, p1_2d, p3_2d, degree, delta_degree, rotate_axis);
+                    }
+                }
+                return vertices;
+            }
             
         private:
-            glm::vec3 get_3d_point(glm::vec2 point, float degree);
-            void push_point(std::vector<float> *target, glm::vec3 point, glm::vec3 normal, float texture_x, float texture_y);
-            void push_surface(std::vector<float> *target, glm::vec2 p1, glm::vec2 p3, float degree, float degree_delta);
-        }; 
+            static glm::vec3 get_3d_point(glm::vec2 point, float degree, const glm::vec3& rotate_axis){
+                auto v = glm::vec4(point.x, point.y, 0, 1);
+                return glm::rotate(glm::mat4(1.0), (float)glm::radians(degree), rotate_axis) * v;
+            }
+            static void push_point(std::vector<float> *target, glm::vec3 point, glm::vec3 normal, float texture_x, float texture_y){
+                target->push_back(point.x);
+                target->push_back(point.y);
+                target->push_back(point.z);
+                target->push_back(normal.x);
+                target->push_back(normal.y);
+                target->push_back(normal.z);
+                target->push_back(texture_x);
+                target->push_back(texture_y);
+            }
+            static void push_surface(std::vector<float> *target, glm::vec2 p1, glm::vec2 p3, float degree, float degree_delta, const glm::vec3& rotate_axis){
+                /*
+                draw a plane P1P2P4P3
+                P1--P2
+                |  /|
+                | / |
+                |/  |
+                P3--P4
+                */
+
+                auto p1_3d = get_3d_point(p1, degree, rotate_axis);
+                auto p2_3d = get_3d_point(p1, degree+degree_delta, rotate_axis);
+                auto p3_3d = get_3d_point(p3, degree, rotate_axis);
+                auto p4_3d = get_3d_point(p3, degree+degree_delta, rotate_axis);
+
+                auto texture_x1 = degree/360;
+                auto texture_x2 = (degree+degree_delta)/360;
+                auto texture_y1 = p1.y+0.5; // note [-0.5, 0.5]
+                auto texture_y2 = p3.y+0.5;
+
+                glm::vec3 normal1 = glm::triangleNormal(p1_3d, p2_3d, p3_3d);
+                glm::vec3 normal2 = glm::triangleNormal(p2_3d, p4_3d, p3_3d);
+
+                push_point(target, p1_3d, normal1, texture_x1, texture_y1);
+                push_point(target, p2_3d, normal1, texture_x2, texture_y1);
+                push_point(target, p3_3d, normal1, texture_x1, texture_y2);
+
+                push_point(target, p2_3d, normal2, texture_x2, texture_y1);
+                push_point(target, p3_3d, normal2, texture_x1, texture_y2);
+                push_point(target, p4_3d, normal2, texture_x2, texture_y2);
+            }
+        };
+
+        class vgen_ball {
+        public:
+            static std::vector<float> generate(int plane_num){
+                std::vector<glm::vec2> semicircle_points;
+                for(int i=0; i<plane_num; i++){
+                    float theta = M_PI*i/plane_num;
+                    semicircle_points.push_back(glm::vec2(cos(theta)/2, sin(theta)/2));
+                }
+                return vgen_revolu_surf::generate(plane_num, semicircle_points, glm::vec3(1, 0, 0));
+            }
+        };
+
+        class vgen_cone {
+        public:
+            static std::vector<float> generate(int plane_num, float theta){
+                std::vector<glm::vec2> outlines;
+                outlines.push_back(glm::vec2(0, 0.5));
+                outlines.push_back(glm::vec2(-0.5/std::tan(M_PI_2+theta), -0.5));
+                return vgen_revolu_surf::generate(plane_num, outlines, glm::vec3(0.0, 1.0, 0.0));
+            }
+        };
     }
 }

@@ -41,6 +41,7 @@ class shader_t{
         void bind_texture(const char* texture_key, class texture_t* texture);
         void update_camera(const camera_t *camera) const;
         void update_model(const model_t *model) const;
+        void update_model(const model_t& model) const;
 
         void set_uniform(const char* key, bool val) const;
         void set_uniform(const char* key, int val) const;
@@ -99,12 +100,12 @@ public:
     // Element number
     unsigned int e_cnt;
 
-    vertices_t(unsigned int vertex_num, std::initializer_list<unsigned int> vertex_div, const float* vertex_data,
+    vertices_t(unsigned int vertex_data_len, std::initializer_list<unsigned int> vertex_div, const float* vertex_data,
                         unsigned int element_num, const unsigned int* element_data,
                         GLenum buffer_usage=GL_STATIC_DRAW);
     ~vertices_t();
     void draw_array(GLenum draw_mode, int beg, int num) const;
-    void draw_array(GLenum draw_mode) const;
+    void draw_array(GLenum draw_mode=GL_TRIANGLES) const;
     void draw_element(GLenum draw_mode) const;
 };
 
@@ -172,9 +173,11 @@ public:
     glm::mat4 scale_to(float x);
     glm::mat4 scale_to(glm::vec3 x);
     glm::mat4 scale_to(float x, float y, float z);
+    glm::mat4 set_quaternion(glm::quat q);
     glm::mat4 rotate_to(float degree, glm::vec3 axis);
     glm::mat4 rotate_to(glm::vec3 pitch_yaw_roll_degree);
     glm::mat4 rotate(glm::vec3 pitch_yaw_roll_degree);
+    glm::mat4 rotate(float degree, glm::vec3 axis);
     glm::vec3 look_at_dir() const;
     glm::vec3 rotate_euler_angles() const;
     void set_parent_model(class model_t* p);

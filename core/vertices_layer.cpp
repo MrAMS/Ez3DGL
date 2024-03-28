@@ -162,6 +162,10 @@ void shader_t::update_model(const model_t *model) const{
     set_uniform(model_key, model->get_model());
 }
 
+void shader_t::update_model(const model_t& model) const{
+    set_uniform(model_key, model.get_model());
+}
+
 void shader_t::check_compile_errors(unsigned int shader, const char* type)
 {
     int success;
@@ -255,15 +259,15 @@ texture_t::texture_t(unsigned char* data, int size){
     valid = true;
 }
 
-vertices_t::vertices_t(unsigned int vertex_num, std::initializer_list<unsigned int> vertex_div, const float* vertex_data,
+vertices_t::vertices_t(unsigned int vertex_data_len, std::initializer_list<unsigned int> vertex_div, const float* vertex_data,
                             unsigned int element_num, const unsigned int* element_data, 
                             GLenum buffer_usage){
 
-    v_cnt = vertex_num;
     e_cnt = element_num;
     unsigned int vertex_per_size = 0;
     for(const unsigned int &item : vertex_div)
         vertex_per_size += item;
+    v_cnt = vertex_data_len / vertex_per_size;
     // Vertex Array
     glGenVertexArrays(1, &VAO_id);
     
@@ -278,7 +282,7 @@ vertices_t::vertices_t(unsigned int vertex_num, std::initializer_list<unsigned i
         
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO_id);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*vertex_per_size*vertex_num, vertex_data, buffer_usage);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*vertex_data_len, vertex_data, buffer_usage);
 
     if(element_num != 0){
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_id);
@@ -441,6 +445,11 @@ glm::mat4 model_t::scale_to(glm::vec3 x){
     return get_model();
 }
 
+glm::mat4 model_t::set_quaternion(glm::quat q){
+    quaternion = q;
+    return get_model();
+}
+
 glm::mat4 model_t::rotate_to(float degree, glm::vec3 axis){
     quaternion =glm::angleAxis(glm::radians(degree), axis);
     return get_model();
@@ -453,7 +462,14 @@ glm::mat4 model_t::rotate_to(glm::vec3 pitch_yaw_roll_degree){
 
 glm::mat4 model_t::rotate(glm::vec3 pitch_yaw_roll_degree){
     const auto q = glm::quat(glm::radians(pitch_yaw_roll_degree));
-    quaternion *= q;
+    quaternion = q * quaternion;
+    return get_model();
+}
+
+glm::mat4 model_t::rotate(float degree, glm::vec3 axis){
+    const auto q = glm::angleAxis(glm::radians(degree), axis);
+    quaternion = q * quaternion;
+
     return get_model();
 }
 
