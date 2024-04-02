@@ -19,6 +19,9 @@ public:
     glm::vec3 vel() const{
         return velocity;
     }
+    void set_vel(glm::vec3 vel){
+        velocity = vel;
+    }
 private:
     float mass=1;
     glm::vec3 position;

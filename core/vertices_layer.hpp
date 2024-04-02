@@ -19,6 +19,7 @@
 #include <memory>
 #include <vector>
 #include <glm/gtc/quaternion.hpp>
+#include "stb_image.h"
 
 namespace Ez3DGL {
 
@@ -81,6 +82,44 @@ class texture_t{
         texture_t(unsigned char* image_data, int size);
         const char* file_name;
         
+};
+
+class texture_skybox_t{
+public:
+    unsigned int texture_id;
+
+    texture_skybox_t(std::vector<const char*> file_names){
+        glGenTextures(1, &texture_id);
+        glActiveTexture(GL_TEXTURE0);
+
+        int width,height;
+        unsigned char* image;
+
+        glBindTexture(GL_TEXTURE_CUBE_MAP, texture_id);
+        for(GLuint i = 0; i < file_names.size(); i++)
+        {
+            int width, height, nrCh;
+            image = stbi_load(file_names[i], &width, &height, &nrCh, 0);
+            if(image){
+                GLenum color_format;
+                switch (nrCh) {
+                    case 1: color_format = GL_RED; break;
+                    case 3: color_format = GL_RGB; break;
+                    case 4: color_format = GL_RGBA; break;
+                }
+                glTexImage2D(
+                    GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0,
+                    color_format, width, height, 0, color_format, GL_UNSIGNED_BYTE, image
+                );
+            }
+        }
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+    }
 };
 
 /**
@@ -162,9 +201,8 @@ public:
     glm::vec3 pos;
     glm::vec3 scale=glm::vec3(1.);
     glm::vec3 dir;
-    glm::quat quaternion;
+    glm::quat quaternion=glm::quat(1.0, 0.0, 0.0, 0.0);
 
-    model_t()=default;
     model_t(glm::vec3 pos, glm::vec3 scale=glm::vec3(1.), glm::vec3 init_dir=glm::vec3(0, 0, 1), class model_t* p=nullptr);
 
     glm::mat4 get_model() const;
@@ -173,7 +211,7 @@ public:
     glm::mat4 scale_to(float x);
     glm::mat4 scale_to(glm::vec3 x);
     glm::mat4 scale_to(float x, float y, float z);
-    glm::mat4 set_quaternion(glm::quat q);
+    glm::mat4 set_quaternion(const glm::quat& q);
     glm::mat4 rotate_to(float degree, glm::vec3 axis);
     glm::mat4 rotate_to(glm::vec3 pitch_yaw_roll_degree);
     glm::mat4 rotate(glm::vec3 pitch_yaw_roll_degree);

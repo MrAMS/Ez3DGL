@@ -10,6 +10,7 @@
  */
 #pragma once
 
+#include <cassert>
 #include <cmath>
 #include <vector>
 #include <glm/glm.hpp>
@@ -63,8 +64,9 @@ namespace Ez3DGL {
             
         private:
             static glm::vec3 get_3d_point(glm::vec2 point, float degree, const glm::vec3& rotate_axis){
-                auto v = glm::vec4(point.x, point.y, 0, 1);
-                return glm::rotate(glm::mat4(1.0), (float)glm::radians(degree), rotate_axis) * v;
+                const auto v = glm::vec4(point.x, point.y, 0, 1);
+                const auto res = glm::rotate(glm::mat4(1.0), (float)glm::radians(degree), rotate_axis) * v;
+                return res;
             }
             static void push_point(std::vector<float> *target, glm::vec3 point, glm::vec3 normal, float texture_x, float texture_y){
                 target->push_back(point.x);
@@ -75,6 +77,12 @@ namespace Ez3DGL {
                 target->push_back(normal.z);
                 target->push_back(texture_x);
                 target->push_back(texture_y);
+            }
+            static glm::vec3 convert_nan(glm::vec3 x, float num=0){
+                if(std::isnan(x.x)) x.x = num;
+                if(std::isnan(x.y)) x.y = num;
+                if(std::isnan(x.z)) x.z = num;
+                return x;
             }
             static void push_surface(std::vector<float> *target, glm::vec2 p1, glm::vec2 p3, float degree, float degree_delta, const glm::vec3& rotate_axis){
                 /*
@@ -96,8 +104,8 @@ namespace Ez3DGL {
                 auto texture_y1 = p1.y+0.5; // note [-0.5, 0.5]
                 auto texture_y2 = p3.y+0.5;
 
-                glm::vec3 normal1 = glm::triangleNormal(p1_3d, p2_3d, p3_3d);
-                glm::vec3 normal2 = glm::triangleNormal(p2_3d, p4_3d, p3_3d);
+                glm::vec3 normal1 = convert_nan(glm::triangleNormal(p1_3d, p2_3d, p3_3d));
+                glm::vec3 normal2 = convert_nan(glm::triangleNormal(p2_3d, p4_3d, p3_3d));
 
                 push_point(target, p1_3d, normal1, texture_x1, texture_y1);
                 push_point(target, p2_3d, normal1, texture_x2, texture_y1);
@@ -126,7 +134,7 @@ namespace Ez3DGL {
             static std::vector<float> generate(int plane_num, float theta){
                 std::vector<glm::vec2> outlines;
                 outlines.push_back(glm::vec2(0, 0.5));
-                outlines.push_back(glm::vec2(-0.5/std::tan(M_PI_2+theta), -0.5));
+                outlines.push_back(glm::vec2(-0.5/std::tan(M_PI_2+theta/(M_PI*2)), -0.5));
                 return vgen_revolu_surf::generate(plane_num, outlines, glm::vec3(0.0, 1.0, 0.0));
             }
         };

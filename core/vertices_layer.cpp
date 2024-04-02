@@ -8,11 +8,12 @@
 #include <iostream>
 #include <glm/gtc/type_ptr.hpp>
 #include <vector>
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
 #include <cmath>
 #include "utils/debug.hpp"
 #include <glm/gtx/quaternion.hpp>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 
 using namespace Ez3DGL;
 
@@ -445,7 +446,7 @@ glm::mat4 model_t::scale_to(glm::vec3 x){
     return get_model();
 }
 
-glm::mat4 model_t::set_quaternion(glm::quat q){
+glm::mat4 model_t::set_quaternion(const glm::quat& q){
     quaternion = q;
     return get_model();
 }
@@ -474,7 +475,7 @@ glm::mat4 model_t::rotate(float degree, glm::vec3 axis){
 }
 
 glm::vec3 model_t::look_at_dir() const{
-    return glm::normalize(quaternion * dir);
+    return quaternion * dir;
 }
 
 glm::vec3 model_t::rotate_euler_angles() const{
