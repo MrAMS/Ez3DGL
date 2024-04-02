@@ -37,6 +37,8 @@ class shader_t{
 
         shader_t(const char* vertex_shader_path, const char* fragment_shader_path,
                    const char* view_key, const char* proj_key, const char* model_key);
+        shader_t(const std::string vertex_shader, const std::string fragment_shader,
+                   const char* view_key, const char* proj_key, const char* model_key);
         void use() const;
         void clear_texture();
         void bind_texture(const char* texture_key, class texture_t* texture);

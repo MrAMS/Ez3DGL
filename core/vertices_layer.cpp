@@ -78,6 +78,35 @@ shader_t::shader_t(const char* vertex_shader_path, const char* fragment_shader_p
     glDeleteShader(fragment_id);
 }
 
+shader_t::shader_t(const std::string vertex_shader, const std::string fragment_shader,
+                   const char* view_key, const char* proj_key, const char* model_key):
+                   vertex_shader_path("FROM STRING"), fragment_shader_path("FROM STRING"),
+                       view_key(view_key), proj_key(proj_key), model_key(model_key)
+{
+    const char* vShaderCode = vertex_shader.c_str();
+    const char* fShaderCode = fragment_shader.c_str();
+    // 2. compile shaders
+    // vertex shader
+    vertex_id = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vertex_id, 1, &vShaderCode, NULL);
+    glCompileShader(vertex_id);
+    check_compile_errors(vertex_id, "VERTEX");
+    // fragment Shader
+    fragment_id = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fragment_id, 1, &fShaderCode, NULL);
+    glCompileShader(fragment_id);
+    check_compile_errors(fragment_id, "FRAGMENT");
+    // shader Program
+    program_id = glCreateProgram();
+    glAttachShader(program_id, vertex_id);
+    glAttachShader(program_id, fragment_id);
+    glLinkProgram(program_id);
+    check_compile_errors(program_id, "PROGRAM");
+    // delete the shaders as they're linked into our program now and no longer necessary
+    glDeleteShader(vertex_id);
+    glDeleteShader(fragment_id);
+}
+
 void shader_t::use() const{
     glUseProgram(program_id);
 }

@@ -1,12 +1,14 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <string>
 #include <sys/socket.h>
 #include <vector>
+#include "utils/preset.hpp"
 #include "vertices_layer.hpp"
 
 
@@ -107,9 +109,9 @@ class Shader{
 public:
     float tmp_material_shininess=32;
 
-    void setup_shader(){
+    void setup_shader(uint32_t max_light_num=128){
         assert_with_info(shader==nullptr, "shader is already setup");
-        shader = new shader_t("../shader/fragpos_normal_texcoord.vs", "../shader/multiple_lights.fs", "view", "projection", "model");
+        shader = new shader_t(preset::shader::vs_fragpos_normal_texcoord(), preset::shader::fs_multiple_lights_shader(max_light_num), "view", "projection", "model");
     }
     void set_lights(const std::vector<LightDir>& dir_lights, const std::vector<LightPoint>& point_lights, const std::vector<LightSpot>& spot_lights){
         shader->use();

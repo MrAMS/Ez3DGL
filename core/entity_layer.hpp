@@ -29,19 +29,4 @@ private:
     glm::vec3 acceleration;
 };
 
-// class RenderObj{
-// public:
-//     RenderObj(Shader* shader, Model* model, model_t* mat_model):
-//         shader(shader), model(model), mat_model(mat_model){}
-//     void render(const Lights* lights, const camera_t* camera){
-//         lights->apply_shader(shader);
-//         model->draw(shader, camera, mat_model);
-//     }
-// private:
-//     model_t* mat_model;
-//     Model* model;
-//     Shader* shader;
-
-// };
-
 }
