@@ -148,6 +148,8 @@ public:
     void draw_array(GLenum draw_mode, int beg, int num) const;
     void draw_array(GLenum draw_mode=GL_TRIANGLES) const;
     void draw_element(GLenum draw_mode) const;
+    void update_vbo_buffer(unsigned int vertex_data_size, const float* vertex_data, unsigned int offset=0);
+    void update_ebo_buffer(unsigned int element_data_size, const unsigned int* element_data, unsigned int offset=0);
 };
 
 /**

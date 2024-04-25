@@ -332,6 +332,15 @@ vertices_t::vertices_t(unsigned int vertex_data_len, std::initializer_list<unsig
 
 }
 
+void vertices_t::update_vbo_buffer(unsigned int data_size, const float* vertex_data, unsigned int offset=0){
+    glBindBuffer(GL_ARRAY_BUFFER, VBO_id);
+    glBufferSubData(GL_ARRAY_BUFFER, offset, data_size, vertex_data);
+}
+void vertices_t::update_ebo_buffer(unsigned int data_size, const unsigned int* element_data, unsigned int offset=0){
+    glBindBuffer(GL_ARRAY_BUFFER, EBO_id);
+    glBufferSubData(GL_ARRAY_BUFFER, offset, data_size, element_data);
+}
+
 vertices_t::~vertices_t(){
     /*
     glDeleteVertexArrays(1, &VAO_id);
@@ -344,6 +353,7 @@ vertices_t::~vertices_t(){
 void vertices_t::draw_array(GLenum draw_mode, int beg, int num) const{
     glBindVertexArray(VAO_id);
     glDrawArrays(draw_mode, beg, num);
+    glBindVertexArray(0);
 }
 
 void vertices_t::draw_array(GLenum draw_mode) const {
