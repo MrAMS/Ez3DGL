@@ -207,9 +207,9 @@ void shader_t::check_compile_errors(unsigned int shader, const char* type)
         {
             glGetShaderInfoLog(shader, 1024, NULL, infoLog);
             if (strcmp(type, "VERTEX")==0){
-                printf("[%s Shader ERROR] %s%s\n", type, vertex_shader_path, infoLog+1);
+                panic_with_info("[%s Shader ERROR] %s%s\n", type, vertex_shader_path, infoLog+1);
             }else{
-                printf("[%s Shader ERROR] %s%s\n", type, fragment_shader_path, infoLog+1);
+                panic_with_info("[%s Shader ERROR] %s%s\n", type, fragment_shader_path, infoLog+1);
             }
             exit(1);
         }
